@@ -29,14 +29,14 @@ int main(int argc, char** argv) {
 
   // Run pipeline stages sequentially
   grayscale_serial(input_image, gray_image, w, h, channels);
-  // blur_serial(gray_image, blurred_image, w, h);
-  // sobel_serial(blurred_image, final, w, h);
+  blur_serial(gray_image, blurred_image, w, h);
+  sobel_serial(blurred_image, final, w, h);
 
   clock_gettime(CLOCK_MONOTONIC, &end);
   double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
   printf("Serial execution time: %f seconds\n", time);
 
-  stbi_write_jpg("data/output_serial/test_output_serial.jpg", w, h, 1, gray_image, 90);
+  stbi_write_jpg("data/output_serial/test_output_serial.jpg", w, h, 1, final, 90);
 
   // Cleanup
   free(gray_image);
