@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 
   int w, h, channels;
 
-  // Load the input image using stb_image
+  // Loading the input image using stb_image
   unsigned char* input_image = stbi_load(argv[1], &w, &h, &channels, 0);
 
   // Buffers for pipeline stages
@@ -24,18 +24,23 @@ int main(int argc, char** argv) {
   unsigned char *blurred_image = malloc(w * h);
   unsigned char *final = malloc(w * h);
 
+  // Timing the serial execution of the pipeline
   struct timespec start, end;
   clock_gettime(CLOCK_MONOTONIC, &start);
 
-  // Run pipeline stages sequentially
+  // Running pipeline stages sequentially
   grayscale_serial(input_image, gray_image, w, h, channels);
   blur_serial(gray_image, blurred_image, w, h);
   sobel_serial(blurred_image, final, w, h);
 
   clock_gettime(CLOCK_MONOTONIC, &end);
+
+  // Calculating and printing the execution time for the serial pipeline
+  // The execution time is calculated by taking the difference between the start and end times, converting it to seconds.
   double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
   printf("Serial execution time: %f seconds\n", time);
 
+  // Saving the final output image using stb_image_write
   stbi_write_jpg("data/output_serial/test_output_serial.jpg", w, h, 1, final, 90);
 
   // Cleanup
