@@ -27,7 +27,7 @@
         ./openmp_app data/input/test_input.jpeg
     ```
 ### Outputs and Timings
-After executing the program, the output image will be stored in the **data/output_serial** and **data/output_openmp**folder.
+After executing the program, the output image will be stored in the **data/output_serial** and **data/output_openmp** folder.
 
 The program computes the time taken by the entire operation in seconds, and prints it to the terminal.
 
