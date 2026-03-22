@@ -17,13 +17,17 @@
     ```bash
         make
     ```
-2. Execution - Run the below command. It will take input image as second argument:
+2. Execution - Run the below command for serial execution. It will take input image as second argument:
     ```bash
         ./serial_app data/input/test_input.jpeg
     ```
-
+3. Execution - Run the below command for openmp execution. It will take input image as second argument:
+    ```bash
+        export OMP_NUM_THREADS=4 #mention number of threads here
+        ./openmp_app data/input/test_input.jpeg
+    ```
 ### Outputs and Timings
-After executing the program, the output image will be stored in the **data/output_serial** folder.
+After executing the program, the output image will be stored in the **data/output_serial** and **data/output_openmp**folder.
 
 The program computes the time taken by the entire operation in seconds, and prints it to the terminal.
 
