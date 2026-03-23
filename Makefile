@@ -1,8 +1,9 @@
 CC = gcc
+MPI_CC = mpicc
 CFLAGS = -O3 -Wall -fopenmp
 LIBS = -lm
 
-all: serial openmp
+all: serial openmp mpi
 
 serial: src/serial_main.c src/filters.c
 	$(CC) $(CFLAGS) $^ -o serial_app $(LIBS)
@@ -10,5 +11,8 @@ serial: src/serial_main.c src/filters.c
 openmp: src/openmp_main.c src/filters.c
     $(CC) $(CFLAGS) $^ -o openmp_app $(LIBS)
 
+mpi: src/mpi_main.c src/filters.c
+	$(MPI_CC) $(CFLAGS) $^ -o mpi_app $(LIBS)
+
 clean:
-	rm -f serial_app openmp_app output_serial.jpg
+	rm -f serial_app openmp_app output_serial.jpeg
