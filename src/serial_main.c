@@ -6,6 +6,7 @@
 #include "../include/filters.h"
 #include <stdio.h>
 #include <time.h>
+#include <stdbool.h>
 
 int main(int argc, char** argv) {
   // Check for input image argument, if not provided, print usage and exit
@@ -29,9 +30,9 @@ int main(int argc, char** argv) {
   clock_gettime(CLOCK_MONOTONIC, &start);
 
   // Running pipeline stages sequentially
-  grayscale_serial(input_image, gray_image, w, h, channels);
-  blur_serial(gray_image, blurred_image, w, h);
-  sobel_serial(blurred_image, final, w, h);
+  grayscale_filter(input_image, gray_image, w, h, channels, false);
+  blur_filter(gray_image, blurred_image, w, h, false);
+  sobel_filter(blurred_image, final, w, h, false);
 
   clock_gettime(CLOCK_MONOTONIC, &end);
 

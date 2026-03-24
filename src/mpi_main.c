@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
                  local_rgb, local_pixels * channels, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
     // 6. Step A: Grayscale
-    grayscale_serial(local_rgb, local_gray, w, local_rows, channels);
+    grayscale_filter(local_rgb, local_gray, w, local_rows, channels, false);
 
     // 7. Step B: Halo Exchange
     // Copy local gray into the "middle" of the halo buffer
@@ -95,8 +96,8 @@ int main(int argc, char** argv) {
     
 
     // 8. Step C: Filtering (Passing the chunk with halos)
-    blur_serial(local_gray_halos, local_blur_halos, w, local_rows + 2);
-    sobel_serial(local_blur_halos, local_final, w, local_rows + 2);
+    blur_filter(local_gray_halos, local_blur_halos, w, local_rows + 2, false);
+    sobel_filter(local_blur_halos, local_final, w, local_rows + 2, false);
 
     // 9. Gather everything back
     MPI_Gatherv(local_final, local_pixels, MPI_UNSIGNED_CHAR,

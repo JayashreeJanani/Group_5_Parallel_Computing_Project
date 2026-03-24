@@ -1,6 +1,8 @@
 #include "../include/filters.h"
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <omp.h>
 
 /*
   Grayscale filter implementation (RGB to Grayscale)
@@ -13,7 +15,9 @@
 
   
 */
-void grayscale_serial(unsigned char* input, unsigned char* output, int width, int height, int channels) {
+void grayscale_filter(unsigned char* input, unsigned char* output, int width, int height, int channels, bool is_openmp) {
+  // Parallelizing the loop using OpenMP if is_openmp is true, otherwise it will run sequentially
+  #pragma omp parallel for schedule(static) if(is_openmp)
   // Iterating over each pixel in the input image
   for (int i = 0; i < width * height; i++) {
     // Extracting the RGB values from the input image using the channels information
@@ -40,7 +44,7 @@ void grayscale_serial(unsigned char* input, unsigned char* output, int width, in
   Each pixel in the output image is computed by taking the weighted sum of the neighboring pixels in the input image, where the weights are determined by the kernel. 
   This results in a blurred version of the original image, which helps to reduce noise and detail.
 */
-void blur_serial(unsigned char* input, unsigned char* output, int width, int height) {
+void blur_filter(unsigned char* input, unsigned char* output, int width, int height, bool is_openmp) {
   float kernel[3][3] = {
         {1/16.0, 2/16.0, 1/16.0},
         {2/16.0, 4/16.0, 2/16.0},
@@ -48,6 +52,7 @@ void blur_serial(unsigned char* input, unsigned char* output, int width, int hei
     };
  
   // Iterating over each pixel in the input image, skipping the borders to avoid out-of-bounds access
+  #pragma omp parallel for schedule(static) if(is_openmp)
   for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
           float sum = 0.0;
@@ -83,12 +88,13 @@ void blur_serial(unsigned char* input, unsigned char* output, int width, int hei
   Each pixel in the output image is computed by taking the magnitude of the gradient vector formed by the results of the two convolutions (Gx and Gy). 
   This results in an image that highlights the edges present in the original image.
 */
-void sobel_serial(unsigned char* input, unsigned char* output, int width, int height) {
+void sobel_filter(unsigned char* input, unsigned char* output, int width, int height, bool is_openmp) {
   // Sobel kernels for horizontal (Gx) and vertical (Gy) edge detection
     int Gx[3][3] = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
     int Gy[3][3] = {{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}};
  
     // Iterating over each pixel in the input image, skipping the borders to avoid out-of-bounds access
+    #pragma omp parallel for schedule(static) if(is_openmp)
     for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
             float sumX = 0, sumY = 0;
