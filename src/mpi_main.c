@@ -27,93 +27,103 @@ int main(int argc, char** argv) {
     unsigned char* full_input = NULL;
     unsigned char* full_output = NULL;
 
-    // 1. Rank 0 loads the image
     if (rank == 0) {
         full_input = stbi_load(argv[1], &w, &h, &channels, 0);
         if (!full_input) {
             fprintf(stderr, "Error: Could not load image %s\n", argv[1]);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        printf("Image Loaded: %dx%d, %d channels\n", w, h, channels);
         full_output = malloc(w * h);
     }
 
-    // 2. BROADCAST: Everyone needs to know these values before allocating memory
     MPI_Bcast(&w, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&h, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&channels, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    // 3. Handle non-divisible heights (Workload distribution)
     int* sendcounts = malloc(size * sizeof(int));
     int* displs = malloc(size * sizeof(int));
-    int* sendcounts_rgb = malloc(size * sizeof(int));
-    int* displs_rgb = malloc(size * sizeof(int));
+    int* sc_rgb = malloc(size * sizeof(int));
+    int* dp_rgb = malloc(size * sizeof(int));
 
     int offset = 0;
     for (int i = 0; i < size; i++) {
         int rows = (h / size) + (i < (h % size) ? 1 : 0);
         sendcounts[i] = rows * w;
         displs[i] = offset * w;
-        sendcounts_rgb[i] = rows * w * channels;
-        displs_rgb[i] = offset * w * channels;
+        sc_rgb[i] = rows * w * channels;
+        dp_rgb[i] = offset * w * channels;
         offset += rows;
     }
 
     int local_rows = sendcounts[rank] / w;
     int local_pixels = sendcounts[rank];
 
-    // 4. Local Buffers
     unsigned char* local_rgb = malloc(local_pixels * channels);
     unsigned char* local_gray = malloc(local_pixels);
-    unsigned char* local_gray_halos = calloc(w * (local_rows + 2), 1);
-    unsigned char* local_blur_halos = calloc(w * (local_rows + 2), 1);
+    
+    // CRITICAL: Use calloc for ALL halo buffers to prevent "garbage" lines
+    unsigned char* gray_halos = calloc(w * (local_rows + 2), 1);
+    unsigned char* blur_halos = calloc(w * (local_rows + 2), 1);
+    unsigned char* sobel_halos = calloc(w * (local_rows + 2), 1);
     unsigned char* local_final = malloc(local_pixels);
 
-    // 5. Distribute data
-    MPI_Scatterv(full_input, sendcounts_rgb, displs_rgb, MPI_UNSIGNED_CHAR,
+    MPI_Scatterv(full_input, sc_rgb, dp_rgb, MPI_UNSIGNED_CHAR,
                  local_rgb, local_pixels * channels, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
-    // 6. Step A: Grayscale
+    // 1. Grayscale
     grayscale_filter(local_rgb, local_gray, w, local_rows, channels, false);
 
-    // 7. Step B: Halo Exchange
-    // Copy local gray into the "middle" of the halo buffer
-    memcpy(local_gray_halos + w, local_gray, local_pixels);
-
+    // 2. Initial Halo Exchange
+    memcpy(gray_halos + w, local_gray, local_pixels);
     int up = (rank == 0) ? MPI_PROC_NULL : rank - 1;
     int down = (rank == size - 1) ? MPI_PROC_NULL : rank + 1;
 
-    // Send my top row to 'up', receive into my bottom halo from 'down'
     MPI_Sendrecv(local_gray, w, MPI_UNSIGNED_CHAR, up, 0,
-                 local_gray_halos + (local_rows + 1) * w, w, MPI_UNSIGNED_CHAR, down, 0,
+                 gray_halos + (local_rows + 1) * w, w, MPI_UNSIGNED_CHAR, down, 0,
                  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-    // Send my bottom row to 'down', receive into my top halo from 'up'
     MPI_Sendrecv(local_gray + (local_rows - 1) * w, w, MPI_UNSIGNED_CHAR, down, 1,
-                 local_gray_halos, w, MPI_UNSIGNED_CHAR, up, 1,
+                 gray_halos, w, MPI_UNSIGNED_CHAR, up, 1,
                  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    
+    // 3. Blur
+    blur_filter(gray_halos, blur_halos, w, local_rows + 2, false);
 
-    // 8. Step C: Filtering (Passing the chunk with halos)
-    blur_filter(local_gray_halos, local_blur_halos, w, local_rows + 2, false);
-    sobel_filter(local_blur_halos, local_final, w, local_rows + 2, false);
+    // 4. SECOND HALO EXCHANGE (This makes the blurred edges valid for Sobel)
+    // We create a temp buffer of the blurred pixels to swap them
+    unsigned char* temp_blur = malloc(local_pixels);
+    for(int i = 0; i < local_rows; i++) {
+        memcpy(temp_blur + (i * w), blur_halos + ((i + 1) * w), w);
+    }
 
-    // 9. Gather everything back
+    MPI_Sendrecv(temp_blur, w, MPI_UNSIGNED_CHAR, up, 2,
+                 blur_halos + (local_rows + 1) * w, w, MPI_UNSIGNED_CHAR, down, 2,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Sendrecv(temp_blur + (local_rows - 1) * w, w, MPI_UNSIGNED_CHAR, down, 3,
+                 blur_halos, w, MPI_UNSIGNED_CHAR, up, 3,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    // 5. Sobel
+    sobel_filter(blur_halos, sobel_halos, w, local_rows + 2, false);
+
+    // 6. Extraction (The +1 skips the top halo row)
+    for (int i = 0; i < local_rows; i++) {
+        memcpy(local_final + (i * w), sobel_halos + ((i + 1) * w), w);
+    }
+
+    // 7. Gather result
     MPI_Gatherv(local_final, local_pixels, MPI_UNSIGNED_CHAR,
                 full_output, sendcounts, displs, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
-    // 10. Save and Cleanup
     if (rank == 0) {
         stbi_write_jpg("data/output_mpi/test_output_mpi.jpg", w, h, 1, full_output, 90);
-        printf("MPI Success: Saved to data/output_mpi/test_output_mpi.jpg\n");
+        printf("MPI Success: Processed without lines.\n");
         stbi_image_free(full_input);
         free(full_output);
     }
 
-    free(sendcounts); free(displs); free(sendcounts_rgb); free(displs_rgb);
-    free(local_rgb); free(local_gray); free(local_gray_halos);
-    free(local_blur_halos); free(local_final);
+    free(sendcounts); free(displs); free(sc_rgb); free(dp_rgb);
+    free(local_rgb); free(local_gray); free(gray_halos);
+    free(blur_halos); free(sobel_halos); free(local_final); free(temp_blur);
 
     MPI_Finalize();
     return 0;
