@@ -26,8 +26,12 @@
         export OMP_NUM_THREADS=4 #mention number of threads here
         ./openmp_app data/input/test_input.jpeg
     ```
+4. Execution - Run the below command for MPI execution. It will take input image as second argument:
+    ```bash
+        mpirun -np 4 ./mpi_app data/input/test_input.jpeg #mention number of processor after -np
+    ```
 ### Outputs and Timings
-After executing the program, the output image will be stored in the **data/output_serial** and **data/output_openmp** folder.
+After executing the program, the output image will be stored in the **data/output_serial**, **data/output_openmp** and **data/output_mpi** folder.
 
 The program computes the time taken by the entire operation in seconds, and prints it to the terminal.
 
