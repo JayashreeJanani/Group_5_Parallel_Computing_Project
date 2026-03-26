@@ -9,41 +9,78 @@
 #include <omp.h>
 #include <math.h>
 #include <stdbool.h>
+#include <dirent.h>
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
-        printf("Usage: %s <input_image>\n", argv[0]);
+  // Check for input directory argument, if not provided, print usage and exit
+  if (argc < 2) {
+        printf("Usage: %s <input_directory>\n", argv[0]);
         return 1;
+  }
+
+  // Open the input directory to read image files
+  DIR *dir;
+  struct dirent *ent; // Structure to hold directory entries
+
+  if ((dir = opendir(argv[1])) != NULL) {
+    // Start total timing
+    struct timespec total_start, total_end;
+    clock_gettime(CLOCK_MONOTONIC, &total_start);
+
+    int iteration = 0; // Variable to track the iteration number
+    while ((ent = readdir(dir)) != NULL) {
+      // Skip the current and parent directory entries
+      if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) continue;
+
+      // Construct the full path to the input image
+      char input_path[512];
+      snprintf(input_path, sizeof(input_path), "%s/%s", argv[1], ent->d_name);
+
+      int w, h, channels;
+      unsigned char* input_image = stbi_load(input_path, &w, &h, &channels, 0);
+
+      unsigned char *gray_image = malloc(w * h);
+      unsigned char *blurred_image = malloc(w * h);
+      unsigned char *final = malloc(w * h);
+
+      // High-resolution timing
+      struct timespec start, end;
+      clock_gettime(CLOCK_MONOTONIC, &start);
+
+      // Parallel Pipeline Execution
+      grayscale_filter(input_image, gray_image, w, h, channels, true);
+      blur_filter(gray_image, blurred_image, w, h, true);
+      sobel_filter(blurred_image, final, w, h, true);
+
+      clock_gettime(CLOCK_MONOTONIC, &end);
+
+      double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+      printf("%d: OpenMP execution time (%d threads): %f seconds\n", iteration, omp_get_max_threads(), time);
+      iteration++;
+
+      // Construct the output path by replacing "input" with "output" in the filename
+      char output_path[512];
+      snprintf(output_path, sizeof(output_path), "data/output_openmp/%s", ent->d_name);
+
+      stbi_write_jpg(output_path, w, h, 1, final, 90);
+
+      // Cleanup
+      free(gray_image);
+      free(blurred_image);
+      free(final);
+      stbi_image_free(input_image);
     }
+    closedir(dir);
 
-    int w, h, channels;
-    unsigned char* input_image = stbi_load(argv[1], &w, &h, &channels, 0);
-
-    unsigned char *gray_image = malloc(w * h);
-    unsigned char *blurred_image = malloc(w * h);
-    unsigned char *final = malloc(w * h);
-
-    // High-resolution timing
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-
-    // Parallel Pipeline Execution
-    grayscale_filter(input_image, gray_image, w, h, channels, true);
-    blur_filter(gray_image, blurred_image, w, h, true);
-    sobel_filter(blurred_image, final, w, h, true);
-
-    clock_gettime(CLOCK_MONOTONIC, &end);
-
-    double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-    printf("OpenMP execution time (%d threads): %f seconds\n", omp_get_max_threads(), time);
-
-    stbi_write_jpg("data/output_openmp/test_output_openmp.jpg", w, h, 1, final, 90);
-
-    // Cleanup
-    free(gray_image);
-    free(blurred_image);
-    free(final);
-    stbi_image_free(input_image);
+    // End total timing and print the total execution time for processing all images
+    clock_gettime(CLOCK_MONOTONIC, &total_end);
+    double total_time = (total_end.tv_sec - total_start.tv_sec) + (total_end.tv_nsec - total_start.tv_nsec) / 1e9;
+    printf("OPENMP PIPELINE: Total execution time for all images: %f seconds\n", total_time);
+  } else {
+    // If the directory cannot be opened, print an error message and exit
+    fprintf(stderr, "Error: Could not open directory %s\n", argv[1]);
+    return 1;
+  }
 
     return 0;
 }
