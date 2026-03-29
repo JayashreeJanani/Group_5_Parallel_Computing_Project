@@ -2,3 +2,6 @@ data/output_serial/*.jpg
 data/output_openmp/*.jpg
 data/output_mpi/*.jpg
 data/input/*.jpg
+data/input/small/*.jpg
+data/input/medium/*.jpg
+data/input/large/*.jpg
