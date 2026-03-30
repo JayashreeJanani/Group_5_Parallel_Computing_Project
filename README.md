@@ -13,23 +13,43 @@
 
 ### Compilation and Execution Steps
 
-1. From the project root directory, run:
+1. First download the dataset; execute this command from the root folder:
+    ```bash
+        cd scripts && ./import_data.sh
+    ```
+2. Execute this command from the root folder to resize and classify the input data into small medium and large:
+    ```bash
+        cd scripts && ./resize_data.sh
+    ```
+3. To compile the programs, run from the project root directory:
     ```bash
         make
     ```
-2. Execution - Run the below command for serial execution. It will take input image as second argument:
+4. Execution - Run the below commands for serial execution. It will take the given paths below as second argument:
     ```bash
-        ./serial_app data/input/test_input.jpeg
+        ./serial_app data/input/small   #Small resolution dataset
+        ./serial_app data/input/medium  #Medium resolution dataset
+        ./serial_app data/input/large   #Large resolution dataset
     ```
-3. Execution - Run the below command for openmp execution. It will take input image as second argument:
+5. Execution - Run the below commands for openmp execution. It will take the given paths below as second argument:
     ```bash
         export OMP_NUM_THREADS=4 #mention number of threads here
-        ./openmp_app data/input/test_input.jpeg
+        ./openmp_app data/input/small   #Small resolution dataset
+        ./openmp_app data/input/medium  #Medium resolution dataset
+        ./openmp_app data/input/large   #Large resolution dataset
     ```
-4. Execution - Run the below command for MPI execution. It will take input image as second argument:
+6. Execution - Run the below commands for MPI execution. It will take the given paths below as second argument:
     ```bash
-        mpirun -np 4 ./mpi_app data/input/test_input.jpeg #mention number of processor after -np
+        mpirun -np 4 ./mpi_app data/input/small   #Small resolution dataset #mention number of processor after -np
+        mpirun -np 4 ./mpi_app data/input/medium  #Medium resolution dataset
+        mpirun -np 4 ./mpi_app data/input/large   #Large resolution dataset
     ```
+### NOTE
+Clear the outputs by running this command in the root folder
+```bash
+    cd scripts && ./reset_outputs.sh
+```
+
 ### Outputs and Timings
 After executing the program, the output image will be stored in the **data/output_serial**, **data/output_openmp** and **data/output_mpi** folder.
 
