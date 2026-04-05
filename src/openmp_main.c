@@ -54,8 +54,8 @@ int main(int argc, char** argv) {
 
       clock_gettime(CLOCK_MONOTONIC, &end);
 
-      double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-      printf("%d: OpenMP execution time (%d threads): %f seconds\n", iteration, omp_get_max_threads(), time);
+      // double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+      // printf("%d: OpenMP execution time (%d threads): %f seconds\n", iteration, omp_get_max_threads(), time);
       iteration++;
 
       // Construct the output path by replacing "input" with "output" in the filename
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     // End total timing and print the total execution time for processing all images
     clock_gettime(CLOCK_MONOTONIC, &total_end);
     double total_time = (total_end.tv_sec - total_start.tv_sec) + (total_end.tv_nsec - total_start.tv_nsec) / 1e9;
-    printf("OPENMP PIPELINE: Total execution time for all images: %f seconds\n", total_time);
+    printf("OPENMP PIPELINE: Threads used: %d Total execution time for all images: %f seconds\n", omp_get_max_threads(), total_time);
   } else {
     // If the directory cannot be opened, print an error message and exit
     fprintf(stderr, "Error: Could not open directory %s\n", argv[1]);

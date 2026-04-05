@@ -164,8 +164,8 @@ int main(int argc, char** argv) {
         
         if (rank == 0) {
             clock_gettime(CLOCK_MONOTONIC, &end);
-            double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-            printf("%d: MPI execution time: %f seconds for %s\n", iteration, time, filename);
+            //double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+            //printf("%d: MPI execution time: %f seconds for %s\n", iteration, time, filename);
             
             char output_path[512];
             snprintf(output_path, sizeof(output_path), "data/output_mpi/%s", filename);

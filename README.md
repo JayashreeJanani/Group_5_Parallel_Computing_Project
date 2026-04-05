@@ -62,6 +62,7 @@ This project utilizes the stb libraries by Sean Barrett:
 
 stb_image.h: Used for loading various image formats into raw pixel arrays.
 stb_image_write.h: Used for saving the processed arrays back to image files.
+stb_image_resize2.h: Use for resizing the images into different resolutions as required by the project requirements.
 
 These are single-file, public-domain header libraries. We have chosen to use them to focus our development on the parallelization of the image filters rather than the complexities of the JPEG/PNG file formats.
 

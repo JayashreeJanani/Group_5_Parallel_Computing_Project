@@ -59,10 +59,10 @@ int main(int argc, char** argv) {
       clock_gettime(CLOCK_MONOTONIC, &end);
 
       // Calculating and printing the execution time for the current image
-      double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+      // double time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
       // Print the iteration number
-      printf("%d: Processed %s in %f seconds\n", iteration, ent->d_name, time);
+      // printf("%d: Processed %s in %f seconds\n", iteration, ent->d_name, time);
       iteration++;
 
       // Construct the output path by replacing "input" with "output" in the filename

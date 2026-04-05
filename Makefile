@@ -3,7 +3,7 @@ MPI_CC = mpicc
 CFLAGS = -O3 -Wall -fopenmp
 LIBS = -lm
 
-all: serial openmp mpi resize
+all: serial openmp mpi
 
 serial: src/serial_main.c src/filters.c
 	$(CC) $(CFLAGS) $^ -o serial_app $(LIBS)
@@ -18,4 +18,5 @@ resize: src/resize_main.c
 	$(CC) $(CFLAGS) $^ -o resize_app $(LIBS)
 
 clean:
-	rm -f serial_app openmp_app output_serial.png output_openmp.png mpi_app output_mpi.png resize_app
+	rm -f serial_app openmp_app mpi_app
+	./scripts/reset_outputs.sh
